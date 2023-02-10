@@ -15,7 +15,12 @@ class HomePageCubit extends Cubit<HomePageState> {
 
   Future<void> getUsers(String filter, int skip) async {
     Map response = await _homePageRepo.getUser(filter, skip);
+    if (response["users"].length==0) {
+      emit(HomePageEmpty());
+    }else{
     emit(HomePageDone(response["users"], response["skip"], response["total"], response["limit"]));
+
+    }
   }
 
   Future<List<User>> getUsersLazyLoad(String filter, int skip) async {

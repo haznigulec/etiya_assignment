@@ -28,7 +28,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   initState() {
     super.initState();
 
-    context.read<HomePageCubit>().getUsers("", 0);
+    context.read<HomePageCubit>().getUsers("",0);
   }
 
   @override
@@ -69,16 +69,19 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                         onPressed: () async {
                           _filter.clear();
                           userResult.clear();
-                          userResult.addAll(await context.read<HomePageCubit>().getUsersLazyLoad("", 0));
+                          initialAdd=true;
+                          await context.read<HomePageCubit>().getUsers("",0);
                           pageCount = 1;
                           setState(() {});
                         },
                       )),
                   onChanged: (value) async {
-                    await Future.delayed(const Duration(milliseconds: 500));
+                    await Future.delayed(const Duration(milliseconds: 200));
                     if (value == _filter.text) {
                       userResult.clear();
-                      userResult.addAll(await context.read<HomePageCubit>().getUsersLazyLoad(_filter.text, 0));
+                          initialAdd=true;
+
+                      await context.read<HomePageCubit>().getUsers(_filter.text, 0);
                       pageCount = 1;
                       setState(() {});
                     }
@@ -88,8 +91,23 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                 BlocBuilder<HomePageCubit, HomePageState>(builder: (context, state) {
                   if (state is HomePageInitial) {
                     return const Expanded(child: Center(child: Process()));
+                  }else if(state is HomePageEmpty){
+                    return Column(
+                      children:const [
+                         SizedBox(height: 200),
+                         Text(
+                          "Looks like there is empty",
+                          style: TextStyle(
+                            fontSize: 30,
+                            color: Colors.grey,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    );
                   } else if (state is HomePageDone) {
                     if (initialAdd) {
+                      log("total: ${state.total}");
                       userResult.addAll(state.user);
                       initialAdd = false;
                     }
@@ -103,9 +121,9 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                           onEndOfPage: () async {
                             if (userResult.length < state.total) {
                               userResult.addAll(await context.read<HomePageCubit>().getUsersLazyLoad(_filter.text, pageCount * 20));
+                              log(userResult.length.toString());
                               pageCount++;
                               setState(() {});
-                              log(userResult.length.toString());
                             }
                           },
                           child: ListView.builder(
